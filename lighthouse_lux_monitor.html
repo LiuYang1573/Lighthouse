@@ -1,0 +1,240 @@
+
+<h2 class="sr-only">灯塔平台 LUX 高奖励任务监控器</h2>
+
+<div style="padding: 1rem 0">
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+  <div>
+    <p style="font-size:18px; font-weight:500; margin:0; color:var(--color-text-primary)">灯塔 LUX 任务监控</p>
+    <p style="font-size:13px; color:var(--color-text-secondary); margin:4px 0 0;">自动检测高奖励任务并报警</p>
+  </div>
+  <div id="status-badge" style="font-size:12px; padding:4px 12px; border-radius:var(--border-radius-md); background:var(--color-background-secondary); color:var(--color-text-secondary); border:0.5px solid var(--color-border-tertiary);">待启动</div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:1.5rem;">
+  <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
+    <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">报警阈值</p>
+    <p style="font-size:22px; font-weight:500; margin:0; color:var(--color-text-primary)" id="threshold-display">0.2 LUX</p>
+  </div>
+  <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
+    <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">检测间隔</p>
+    <p style="font-size:22px; font-weight:500; margin:0; color:var(--color-text-primary)" id="interval-display">30 秒</p>
+  </div>
+  <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
+    <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">命中任务数</p>
+    <p style="font-size:22px; font-weight:500; margin:0; color:var(--color-text-primary)" id="hit-count">0</p>
+  </div>
+  <div style="background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:1rem;">
+    <p style="font-size:13px; color:var(--color-text-secondary); margin:0 0 4px;">最后检测</p>
+    <p style="font-size:13px; font-weight:500; margin:0; color:var(--color-text-primary)" id="last-check">—</p>
+  </div>
+</div>
+
+<div style="background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
+  <p style="font-size:13px; font-weight:500; margin:0 0 12px; color:var(--color-text-secondary)">设置</p>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+    <label style="font-size:14px; color:var(--color-text-secondary); min-width:80px;">报警阈值</label>
+    <input type="range" id="threshold" min="0.1" max="2" step="0.1" value="0.2" style="flex:1;">
+    <span style="font-size:14px; font-weight:500; min-width:50px;" id="t-out">0.2 LUX</span>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+    <label style="font-size:14px; color:var(--color-text-secondary); min-width:80px;">检测间隔</label>
+    <input type="range" id="interval" min="10" max="120" step="10" value="30" style="flex:1;">
+    <span style="font-size:14px; font-weight:500; min-width:50px;" id="i-out">30 秒</span>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:4px;">
+    <label style="font-size:14px; color:var(--color-text-secondary); min-width:80px;">只看可抢</label>
+    <input type="checkbox" id="claimable-only" checked style="width:18px; height:18px;">
+    <span style="font-size:13px; color:var(--color-text-secondary)">仅显示 canClaim = true 的任务</span>
+  </div>
+</div>
+
+<div style="background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
+  <p style="font-size:13px; font-weight:500; margin:0 0 4px; color:var(--color-text-secondary)">Cookie 配置</p>
+  <p style="font-size:12px; color:var(--color-text-secondary); margin:0 0 10px;">从浏览器开发者工具复制 access_token 粘贴到这里（每次登录后更新）</p>
+  <input type="password" id="token-input" placeholder="粘贴 access_token..." style="width:100%; font-size:13px; font-family:var(--font-mono);">
+  <p style="font-size:11px; color:var(--color-text-secondary); margin:6px 0 0;"><i class="ti ti-shield" aria-hidden="true" style="font-size:12px;"></i> token 仅保存在本地，不会上传</p>
+</div>
+
+<div style="display:flex; gap:8px; margin-bottom:1.5rem;">
+  <button id="start-btn" onclick="toggleMonitor()">
+    <i class="ti ti-player-play" aria-hidden="true"></i> 开始监控
+  </button>
+  <button id="test-btn" onclick="runTest()">
+    <i class="ti ti-refresh" aria-hidden="true"></i> 立即检测一次
+  </button>
+</div>
+
+<div id="alert-box" style="display:none; background:var(--color-background-warning); border:0.5px solid var(--color-border-warning); border-radius:var(--border-radius-lg); padding:1rem 1.25rem; margin-bottom:1rem;">
+  <p style="font-size:14px; font-weight:500; color:var(--color-text-warning); margin:0 0 8px;">
+    <i class="ti ti-bell" aria-hidden="true"></i> 发现高奖励任务！
+  </p>
+  <div id="alert-content"></div>
+</div>
+
+<div id="log-box" style="background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem;">
+  <p style="font-size:13px; font-weight:500; margin:0 0 10px; color:var(--color-text-secondary)">运行日志</p>
+  <div id="log" style="font-size:12px; font-family:var(--font-mono); color:var(--color-text-secondary); max-height:200px; overflow-y:auto; line-height:1.8;">
+    <div>等待启动...</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let running = false;
+let timer = null;
+let hitCount = 0;
+
+const GRAPHQL_URL = 'https://app.lhdao.top/graphql';
+
+const QUERY = `query {
+  availableEngagements {
+    id
+    title
+    projectName
+    targetUrl
+    actions { baseReward actionType }
+    canClaim { canClaim hintZh }
+    tierOccupancy { tier seats used }
+    createdAt
+  }
+}`;
+
+document.getElementById('threshold').oninput = function() {
+  const v = parseFloat(this.value).toFixed(1);
+  document.getElementById('t-out').textContent = v + ' LUX';
+  document.getElementById('threshold-display').textContent = v + ' LUX';
+};
+
+document.getElementById('interval').oninput = function() {
+  document.getElementById('i-out').textContent = this.value + ' 秒';
+  document.getElementById('interval-display').textContent = this.value + ' 秒';
+  if (running) {
+    clearInterval(timer);
+    timer = setInterval(checkNow, parseInt(this.value) * 1000);
+  }
+};
+
+function addLog(msg) {
+  const logEl = document.getElementById('log');
+  const now = new Date().toLocaleTimeString('zh-CN');
+  const div = document.createElement('div');
+  div.textContent = `[${now}] ${msg}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function toggleMonitor() {
+  if (!running) {
+    const token = document.getElementById('token-input').value.trim();
+    if (!token) {
+      addLog('❌ 请先填写 access_token');
+      return;
+    }
+    running = true;
+    document.getElementById('start-btn').innerHTML = '<i class="ti ti-player-pause" aria-hidden="true"></i> 停止监控';
+    document.getElementById('status-badge').textContent = '监控中';
+    document.getElementById('status-badge').style.background = 'var(--color-background-success)';
+    document.getElementById('status-badge').style.color = 'var(--color-text-success)';
+    addLog('✅ 监控已启动');
+    checkNow();
+    const intervalSec = parseInt(document.getElementById('interval').value) * 1000;
+    timer = setInterval(checkNow, intervalSec);
+  } else {
+    running = false;
+    clearInterval(timer);
+    document.getElementById('start-btn').innerHTML = '<i class="ti ti-player-play" aria-hidden="true"></i> 开始监控';
+    document.getElementById('status-badge').textContent = '已暂停';
+    document.getElementById('status-badge').style.background = 'var(--color-background-secondary)';
+    document.getElementById('status-badge').style.color = 'var(--color-text-secondary)';
+    addLog('⏹ 监控已停止');
+  }
+}
+
+function runTest() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) { addLog('❌ 请先填写 access_token'); return; }
+  addLog('🔍 手动触发检测...');
+  checkNow();
+}
+
+async function checkNow() {
+  const token = document.getElementById('token-input').value.trim();
+  const threshold = parseFloat(document.getElementById('threshold').value);
+  const claimableOnly = document.getElementById('claimable-only').checked;
+
+  document.getElementById('last-check').textContent = new Date().toLocaleTimeString('zh-CN');
+
+  try {
+    const res = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `access_token=${token}`
+      },
+      credentials: 'include',
+      body: JSON.stringify({ query: QUERY })
+    });
+
+    const data = await res.json();
+    const engagements = data?.data?.availableEngagements || [];
+
+    const hits = engagements.filter(e => {
+      const reward = e.actions?.[0]?.baseReward || 0;
+      const canClaim = e.canClaim?.canClaim;
+      if (reward < threshold) return false;
+      if (claimableOnly && !canClaim) return false;
+      return true;
+    });
+
+    if (hits.length > 0) {
+      hitCount += hits.length;
+      document.getElementById('hit-count').textContent = hitCount;
+      showAlert(hits, threshold);
+      playBeep();
+      addLog(`🔔 发现 ${hits.length} 个高于 ${threshold} LUX 的任务！`);
+    } else {
+      addLog(`✓ 检测完成，共 ${engagements.length} 个任务，无高奖励任务`);
+    }
+  } catch(err) {
+    addLog(`❌ 请求失败：${err.message}（可能需要在灯塔页面刷新 token）`);
+  }
+}
+
+function showAlert(hits, threshold) {
+  const box = document.getElementById('alert-box');
+  const content = document.getElementById('alert-content');
+  box.style.display = 'block';
+  content.innerHTML = hits.map(e => {
+    const reward = e.actions?.[0]?.baseReward || 0;
+    const name = e.projectName || e.title || '未命名任务';
+    const url = e.targetUrl || '#';
+    const type = e.actions?.[0]?.actionType || '';
+    return `<div style="margin-bottom:8px; padding:8px; background:var(--color-background-primary); border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning);">
+      <p style="margin:0; font-size:14px; font-weight:500; color:var(--color-text-primary)">${name}</p>
+      <p style="margin:2px 0; font-size:13px; color:var(--color-text-warning)">奖励：${reward} LUX | 类型：${type}</p>
+      <a href="${url}" style="font-size:12px; color:var(--color-text-info);" target="_blank">去推特查看 <i class="ti ti-external-link" style="font-size:11px;" aria-hidden="true"></i></a>
+    </div>`;
+  }).join('');
+}
+
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+  } catch(e) {}
+}
+</script>
